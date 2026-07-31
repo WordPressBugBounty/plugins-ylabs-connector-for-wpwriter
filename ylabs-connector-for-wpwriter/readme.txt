@@ -4,7 +4,7 @@ Tags: ai content writer, ai writing, content generator, seo, auto blogging
 Requires at least: 5.6
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.12.0
+Stable tag: 1.12.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -188,6 +188,9 @@ All connection data and settings are removed from your WordPress database.
 7. Analytics dashboard — track AI usage, costs, and content performance
 
 == Changelog ==
+
+= 1.12.1 =
+* Fixed: "Add widget" failed with a critical error on every site. The next widget slot was calculated from all stored widget keys, including the non-numeric "_multiwidget" key WordPress keeps there, which is a fatal error on PHP 8. Widget keys are now filtered to numbers.
 
 = 1.12.0 =
 * Added: token-authenticated GET /wp-json/wp-manager/v1/status health-check endpoint. Fixes false "disconnected" status on sites whose security plugins block or redirect URLs containing wp/v2/users (user-enumeration protection).

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: YLabs Connector for WPWriter
  * Description: Connect WordPress to WPWriter for AI content, images, SEO, and scheduled auto-blogging.
- * Version: 1.12.0
+ * Version: 1.12.1
  * Author: YLabs
  * Author URI: https://www.wpwriter.com
  * License: GPLv2 or later
@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('WPM_CONNECTOR_VERSION', '1.12.0');
+define('WPM_CONNECTOR_VERSION', '1.12.1');
 
 // Storage keys
 const WPM_CONNECTOR_OPTION_CONNECTIONS = 'wpm_connector_connections';
@@ -1915,8 +1915,12 @@ function wpm_connector_add_widget(WP_REST_Request $request) {
     $widget_type = 'custom_html';
     $instances = get_option("widget_{$widget_type}", array());
 
-    // Find the next available instance number
-    $next_number = empty($instances) ? 2 : max(array_keys($instances)) + 1;
+    // Find the next available instance number. WordPress stores a non-numeric '_multiwidget'
+    // key in this option (and sometimes '__i__'), so the keys must be filtered to integers
+    // first — max() over a mixed array returns the string, and '_multiwidget' + 1 is a fatal
+    // TypeError on PHP 8, which is what made every add_widget call fail with a 500.
+    $numbers     = array_filter(array_keys($instances), 'is_int');
+    $next_number = empty($numbers) ? 2 : max($numbers) + 1;
 
     // Save widget instance
     $instances[$next_number] = array(
