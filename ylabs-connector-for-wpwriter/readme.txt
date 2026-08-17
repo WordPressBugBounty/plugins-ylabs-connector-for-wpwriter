@@ -4,7 +4,7 @@ Tags: ai content writer, ai writing, content generator, seo, auto blogging
 Requires at least: 5.6
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.12.1
+Stable tag: 1.12.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -188,6 +188,9 @@ All connection data and settings are removed from your WordPress database.
 7. Analytics dashboard — track AI usage, costs, and content performance
 
 == Changelog ==
+
+= 1.12.2 =
+* The plugin now re-enables WordPress Application Passwords if a security plugin or host turned them off — only where WordPress core itself supports them (HTTPS or local environments). This unblocks WPWriter's one-step connection; the pairing-code path is unchanged. Every Application Password stays individually revocable under Users → Profile.
 
 = 1.12.1 =
 * Fixed: "Add widget" failed with a critical error on every site. The next widget slot was calculated from all stored widget keys, including the non-numeric "_multiwidget" key WordPress keeps there, which is a fatal error on PHP 8. Widget keys are now filtered to numbers.

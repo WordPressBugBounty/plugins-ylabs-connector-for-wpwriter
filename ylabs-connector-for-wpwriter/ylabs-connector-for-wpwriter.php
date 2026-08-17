@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: YLabs Connector for WPWriter
- * Description: Connect WordPress to WPWriter for AI content, images, SEO, and scheduled auto-blogging.
- * Version: 1.12.1
+ * Description: Connect WordPress to WPWriter for AI content, images, SEO, and scheduled auto-blogging. Re-enables WordPress Application Passwords if a security plugin or host has turned them off, so the one-step connection can work.
+ * Version: 1.12.2
  * Author: YLabs
  * Author URI: https://www.wpwriter.com
  * License: GPLv2 or later
@@ -16,7 +16,32 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('WPM_CONNECTOR_VERSION', '1.12.1');
+define('WPM_CONNECTOR_VERSION', '1.12.2');
+
+/* ==================== APPLICATION PASSWORDS RE-ENABLE ==================== */
+/**
+ * WPWriter's one-step connect authorizes through a WordPress Application Password, and the most
+ * common blocker in the field is a security plugin (Wordfence, iThemes, ...) or host turning the
+ * feature off globally via the `wp_is_application_passwords_available` filter. Installing this
+ * connector is the site owner's explicit request to allow that connection (disclosed in the plugin
+ * description), so we switch the feature back on, at maximum priority so we run after whichever
+ * plugin disabled it.
+ *
+ * IMPORTANT: we only undo a PLUGIN/HOST disable — never WordPress core's own gate. Core refuses
+ * Application Passwords on plain-HTTP, non-local sites (wp_is_application_passwords_supported), and
+ * that refusal must stand: re-evaluate core's support check ourselves and only return true when core
+ * itself would allow the feature here. Every password remains individually revocable under
+ * Users → Profile. (Same battle-tested logic as the WP Agent connector 0.9.11+.)
+ */
+add_filter('wp_is_application_passwords_available', function ($available) {
+    if ($available) {
+        return $available; // nothing to fix
+    }
+    $supported = function_exists('wp_is_application_passwords_supported')
+        ? wp_is_application_passwords_supported()
+        : (is_ssl() || (function_exists('wp_get_environment_type') && wp_get_environment_type() === 'local'));
+    return $supported ? true : $available;
+}, PHP_INT_MAX);
 
 // Storage keys
 const WPM_CONNECTOR_OPTION_CONNECTIONS = 'wpm_connector_connections';
