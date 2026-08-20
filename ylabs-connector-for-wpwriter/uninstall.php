@@ -17,6 +17,7 @@ if (!defined('WP_UNINSTALL_PLUGIN')) {
 // Delete plugin options
 delete_option('wpm_connector_connections');
 delete_option('wpm_connector_hub_url');
+delete_option('wpm_connector_pairing_state');
 
 // Delete legacy options (from versions prior to 1.7.0)
 delete_option('wpm_connector_token_hash');
@@ -35,6 +36,7 @@ if (is_multisite()) {
 
         delete_option('wpm_connector_connections');
         delete_option('wpm_connector_hub_url');
+        delete_option('wpm_connector_pairing_state');
         delete_option('wpm_connector_token_hash');
         delete_option('wpm_connector_user_id');
         delete_transient('wpm_connector_pairing');

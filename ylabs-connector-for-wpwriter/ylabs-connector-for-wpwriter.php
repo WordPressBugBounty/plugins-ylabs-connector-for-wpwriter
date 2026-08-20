@@ -2,7 +2,7 @@
 /**
  * Plugin Name: YLabs Connector for WPWriter
  * Description: Connect WordPress to WPWriter for AI content, images, SEO, and scheduled auto-blogging. Re-enables WordPress Application Passwords if a security plugin or host has turned them off, so the one-step connection can work.
- * Version: 1.12.2
+ * Version: 1.12.3
  * Author: YLabs
  * Author URI: https://www.wpwriter.com
  * License: GPLv2 or later
@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('WPM_CONNECTOR_VERSION', '1.12.2');
+define('WPM_CONNECTOR_VERSION', '1.12.3');
 
 /* ==================== APPLICATION PASSWORDS RE-ENABLE ==================== */
 /**
@@ -46,6 +46,7 @@ add_filter('wp_is_application_passwords_available', function ($available) {
 // Storage keys
 const WPM_CONNECTOR_OPTION_CONNECTIONS = 'wpm_connector_connections';
 const WPM_CONNECTOR_TRANSIENT_PAIRING = 'wpm_connector_pairing';
+const WPM_CONNECTOR_OPTION_PAIRING = 'wpm_connector_pairing_state';
 const WPM_CONNECTOR_OPTION_HUB_URL = 'wpm_connector_hub_url';
 
 // Legacy keys (for migration from v1.4.0 and earlier)
@@ -142,6 +143,54 @@ function wpm_connector_issue_token($wp_user_id, $label) {
 }
 
 /**
+ * Store the pairing state.
+ *
+ * ponytail: an option, not a transient. With an external object cache installed,
+ * set_transient() writes to the cache only. If that cache is per-request or broken,
+ * the wp-admin request that creates the code and the REST request that verifies it
+ * see different caches, the state is gone, and EVERY code fails as "expired or not
+ * found" — no matter how fast the user pastes it. Options have a real DB row, and
+ * wpm_connector_read_pairing_state() drops the cached copy before reading.
+ * The transient is still written so a code minted by <= 1.12.2 keeps working
+ * across the upgrade.
+ */
+function wpm_connector_write_pairing_state($state, $expires_in) {
+    update_option(WPM_CONNECTOR_OPTION_PAIRING, $state, false);
+    set_transient(WPM_CONNECTOR_TRANSIENT_PAIRING, $state, $expires_in);
+}
+
+/**
+ * Read the pairing state, bypassing any object cache.
+ */
+function wpm_connector_read_pairing_state() {
+    wp_cache_delete(WPM_CONNECTOR_OPTION_PAIRING, 'options');
+    $state = get_option(WPM_CONNECTOR_OPTION_PAIRING);
+    if (!is_array($state) || !isset($state['code_hash'])) {
+        $state = get_transient(WPM_CONNECTOR_TRANSIENT_PAIRING); // code minted by <= 1.12.2
+    }
+    return (is_array($state) && isset($state['code_hash'])) ? $state : false;
+}
+
+/**
+ * Has this pairing state run out? Fails closed: a missing or unreadable
+ * expires_at counts as expired, because an option has no TTL of its own.
+ */
+function wpm_connector_pairing_state_expired($state) {
+    if (!isset($state['expires_at']) || !is_numeric($state['expires_at'])) {
+        return true;
+    }
+    return time() >= (int) $state['expires_at'];
+}
+
+/**
+ * Forget the pairing state.
+ */
+function wpm_connector_clear_pairing_state() {
+    delete_option(WPM_CONNECTOR_OPTION_PAIRING);
+    delete_transient(WPM_CONNECTOR_TRANSIENT_PAIRING);
+}
+
+/**
  * Generate a pairing code for the current user.
  */
 function wpm_connector_generate_pairing_code($user_id, $label = '') {
@@ -156,7 +205,7 @@ function wpm_connector_generate_pairing_code($user_id, $label = '') {
         'expires_at' => time() + $expires_in,
     );
 
-    set_transient(WPM_CONNECTOR_TRANSIENT_PAIRING, $state, $expires_in);
+    wpm_connector_write_pairing_state($state, $expires_in);
 
     return $state;
 }
@@ -169,8 +218,8 @@ function wpm_connector_verify_pairing_code($code) {
         return new WP_Error('wpm_invalid_code', 'Invalid pairing code.', array('status' => 400));
     }
 
-    $state = get_transient(WPM_CONNECTOR_TRANSIENT_PAIRING);
-    if (!$state || !isset($state['code_hash'])) {
+    $state = wpm_connector_read_pairing_state();
+    if (!$state) {
         return new WP_Error('wpm_code_expired', 'Pairing code expired or not found. Generate a new one.', array('status' => 400));
     }
 
@@ -179,8 +228,8 @@ function wpm_connector_verify_pairing_code($code) {
         return new WP_Error('wpm_code_mismatch', 'Pairing code does not match. Check for typos or generate a new one.', array('status' => 400));
     }
 
-    if (isset($state['expires_at']) && time() > $state['expires_at']) {
-        delete_transient(WPM_CONNECTOR_TRANSIENT_PAIRING);
+    if (wpm_connector_pairing_state_expired($state)) {
+        wpm_connector_clear_pairing_state();
         return new WP_Error('wpm_code_expired', 'Pairing code has expired. Generate a new one.', array('status' => 400));
     }
 
@@ -191,12 +240,12 @@ function wpm_connector_verify_pairing_code($code) {
  * Get the current pairing state (if any).
  */
 function wpm_connector_get_pairing_state() {
-    $state = get_transient(WPM_CONNECTOR_TRANSIENT_PAIRING);
+    $state = wpm_connector_read_pairing_state();
     if (!$state) {
         return null;
     }
-    if (isset($state['expires_at']) && time() > $state['expires_at']) {
-        delete_transient(WPM_CONNECTOR_TRANSIENT_PAIRING);
+    if (wpm_connector_pairing_state_expired($state)) {
+        wpm_connector_clear_pairing_state();
         return null;
     }
     return $state;
@@ -301,7 +350,7 @@ function wpm_connector_rest_pair(WP_REST_Request $request) {
 
     $token = wpm_connector_issue_token($user_id, $label);
 
-    delete_transient(WPM_CONNECTOR_TRANSIENT_PAIRING);
+    wpm_connector_clear_pairing_state();
 
     $user = get_user_by('id', $user_id);
 
@@ -1232,7 +1281,7 @@ function wpm_connector_admin_page() {
                 $notice = 'Pairing code generated. It expires in 10 minutes.';
             }
         } elseif ($action === 'cancel_pairing') {
-            delete_transient(WPM_CONNECTOR_TRANSIENT_PAIRING);
+            wpm_connector_clear_pairing_state();
 
             // Also remove any connection created from this pairing attempt.
             // The label is passed via hidden form field (the transient may already

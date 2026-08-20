@@ -4,7 +4,7 @@ Tags: ai content writer, ai writing, content generator, seo, auto blogging
 Requires at least: 5.6
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.12.2
+Stable tag: 1.12.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -188,6 +188,9 @@ All connection data and settings are removed from your WordPress database.
 7. Analytics dashboard — track AI usage, costs, and content performance
 
 == Changelog ==
+
+= 1.12.3 =
+* Fixed: on sites with an object cache, every pairing code was rejected as "expired or not found", even seconds after it was generated. The code was held in a transient, which such a cache can drop between the admin screen that shows the code and the request that checks it. The code is now stored in the database and read without the cache. Codes created by earlier versions still work.
 
 = 1.12.2 =
 * The plugin now re-enables WordPress Application Passwords if a security plugin or host turned them off — only where WordPress core itself supports them (HTTPS or local environments). This unblocks WPWriter's one-step connection; the pairing-code path is unchanged. Every Application Password stays individually revocable under Users → Profile.
