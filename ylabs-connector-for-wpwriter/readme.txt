@@ -1,18 +1,21 @@
-=== YLabs Connector for WPWriter ===
+=== YLabs Connector for WPWriter - Manage WordPress from ChatGPT or Claude (MCP) ===
 Contributors: ylabs
-Tags: ai content writer, ai writing, content generator, seo, auto blogging
+Tags: mcp, chatgpt, claude, ai assistant, connector
 Requires at least: 5.6
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.12.3
+Stable tag: 1.12.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Create and automate AI blog posts, pages, and images. Use your OpenAI, Claude, or Gemini key — zero markup on AI costs.
+Manage WordPress from ChatGPT or Claude. Write, edit and schedule posts, update SEO and media, and manage your site through an MCP connector.
+
 
 == Description ==
 
-**Create content on demand or run an auto-blogging schedule.** WPWriter generates complete, SEO-optimized WordPress posts, pages, and images using your own AI API keys — with no token markup.
+Manage your self-hosted WordPress site from ChatGPT or Claude with WPWriter. Ask WPWriter to draft, edit or schedule posts, update SEO fields and add media to your site.
+
+*WPWriter is made by YLabs and is not affiliated with OpenAI, Anthropic or the WordPress Foundation. ChatGPT, Claude and WordPress are trademarks of their owners.*
 
 Most AI writing plugins charge you per word or lock you into expensive subscriptions that include hidden AI costs. WPWriter uses a **BYOK (Bring Your Own Key)** model: connect your OpenAI, Anthropic (Claude), or Google (Gemini) API key and pay the AI providers directly at their standard rates. You keep full control over your AI costs.
 
@@ -188,6 +191,9 @@ All connection data and settings are removed from your WordPress database.
 7. Analytics dashboard — track AI usage, costs, and content performance
 
 == Changelog ==
+
+= 1.12.4 =
+* Readme and listing text only; no code change.
 
 = 1.12.3 =
 * Fixed: on sites with an object cache, every pairing code was rejected as "expired or not found", even seconds after it was generated. The code was held in a transient, which such a cache can drop between the admin screen that shows the code and the request that checks it. The code is now stored in the database and read without the cache. Codes created by earlier versions still work.

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: YLabs Connector for WPWriter
  * Description: Connect WordPress to WPWriter for AI content, images, SEO, and scheduled auto-blogging. Re-enables WordPress Application Passwords if a security plugin or host has turned them off, so the one-step connection can work.
- * Version: 1.12.3
+ * Version: 1.12.4
  * Author: YLabs
  * Author URI: https://www.wpwriter.com
  * License: GPLv2 or later
@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('WPM_CONNECTOR_VERSION', '1.12.3');
+define('WPM_CONNECTOR_VERSION', '1.12.4');
 
 /* ==================== APPLICATION PASSWORDS RE-ENABLE ==================== */
 /**
