@@ -1,14 +1,14 @@
-=== YLabs Connector for WPWriter - Manage WordPress from ChatGPT or Claude (MCP) ===
+=== WPWriter - Manage WordPress from ChatGPT or Claude ===
 Contributors: ylabs
 Tags: mcp, chatgpt, claude, ai assistant, connector
 Requires at least: 5.6
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.12.4
+Stable tag: 1.12.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Manage WordPress from ChatGPT or Claude. Write, edit and schedule posts, update SEO and media, and manage your site through an MCP connector.
+Connect WordPress to WPWriter. Manage posts, SEO and media from ChatGPT or Claude. A WPWriter account is required.
 
 
 == Description ==
@@ -191,6 +191,9 @@ All connection data and settings are removed from your WordPress database.
 7. Analytics dashboard — track AI usage, costs, and content performance
 
 == Changelog ==
+
+= 1.12.5 =
+* Listing update: new title, short description, and animated directory icon (GIF in the plugin directory assets). No code change.
 
 = 1.12.4 =
 * Readme and listing text only; no code change.
