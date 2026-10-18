@@ -19,6 +19,17 @@ delete_option('wpm_connector_connections');
 delete_option('wpm_connector_hub_url');
 delete_option('wpm_connector_pairing_state');
 
+// Pull transport (1.13.0+)
+delete_option('wpm_connector_pull_armed_until');
+delete_option('wpm_connector_pull_last_poll');
+delete_option('wpm_connector_pull_last_status');
+delete_option('wpm_connector_pull_next_idle');
+delete_option('wpm_connector_pull_processed');
+delete_option('wpm_connector_pull_unsent');
+delete_transient('wpm_connector_wake_lock');
+wp_clear_scheduled_hook('wpm_connector_pull_tick');
+wp_clear_scheduled_hook('wpm_connector_pull_tick', array('wake'));
+
 // Delete legacy options (from versions prior to 1.7.0)
 delete_option('wpm_connector_token_hash');
 delete_option('wpm_connector_user_id');
@@ -40,6 +51,15 @@ if (is_multisite()) {
         delete_option('wpm_connector_token_hash');
         delete_option('wpm_connector_user_id');
         delete_transient('wpm_connector_pairing');
+        delete_option('wpm_connector_pull_armed_until');
+        delete_option('wpm_connector_pull_last_poll');
+        delete_option('wpm_connector_pull_last_status');
+        delete_option('wpm_connector_pull_next_idle');
+        delete_option('wpm_connector_pull_processed');
+        delete_option('wpm_connector_pull_unsent');
+        delete_transient('wpm_connector_wake_lock');
+        wp_clear_scheduled_hook('wpm_connector_pull_tick');
+wp_clear_scheduled_hook('wpm_connector_pull_tick', array('wake'));
 
         restore_current_blog();
     }

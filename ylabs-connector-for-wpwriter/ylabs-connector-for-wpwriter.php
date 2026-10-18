@@ -2,7 +2,7 @@
 /**
  * Plugin Name: YLabs Connector for WPWriter
  * Description: Connect WordPress to WPWriter for AI content, images, SEO, and scheduled auto-blogging. Re-enables WordPress Application Passwords if a security plugin or host has turned them off, so the one-step connection can work.
- * Version: 1.12.5
+ * Version: 1.13.1
  * Author: YLabs
  * Author URI: https://www.wpwriter.com
  * License: GPLv2 or later
@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('WPM_CONNECTOR_VERSION', '1.12.5');
+define('WPM_CONNECTOR_VERSION', '1.13.1');
 
 /* ==================== APPLICATION PASSWORDS RE-ENABLE ==================== */
 /**
@@ -290,6 +290,52 @@ function wpm_connector_disconnect_all() {
 /**
  * Authenticate a request by checking the token against all connections.
  */
+/**
+ * 1.13.1: background polling (added in 1.13.0) is removed. A site upgrading from 1.13.0 would otherwise keep a
+ * once-a-minute WP-Cron event with no handler and the polling options, so clear them once. Cheap on every other
+ * request: both checks read cached values.
+ */
+function wpm_connector_remove_pull_leftovers() {
+    if (!wp_next_scheduled('wpm_connector_pull_tick') && !wp_next_scheduled('wpm_connector_pull_tick', array('wake'))
+        && get_option('wpm_connector_pull_last_poll', null) === null) {
+        return;
+    }
+    wp_clear_scheduled_hook('wpm_connector_pull_tick');
+    wp_clear_scheduled_hook('wpm_connector_pull_tick', array('wake'));
+    foreach (array('wpm_connector_pull_armed_until', 'wpm_connector_pull_last_poll', 'wpm_connector_pull_last_status',
+        'wpm_connector_pull_next_idle', 'wpm_connector_pull_processed', 'wpm_connector_pull_unsent') as $option) {
+        delete_option($option);
+    }
+    delete_transient('wpm_connector_wake_lock');
+}
+add_action('init', 'wpm_connector_remove_pull_leftovers');
+
+/**
+ * One permission check for every connector REST route except /pair (it needs a valid pairing code) and /ping:
+ * WordPress refuses the request before the handler runs unless it carries a valid connector token AND the paired
+ * WordPress user has the capability the route needs. The handlers keep their own checks as a second layer.
+ *
+ * @param string $capability The capability the paired user must have ('read' = any paired user).
+ * @return callable
+ */
+function wpm_connector_permission($capability) {
+    return function (WP_REST_Request $request) use ($capability) {
+        $auth = wpm_connector_authenticate_request($request);
+        if (is_wp_error($auth)) {
+            return $auth;
+        }
+        if (!current_user_can($capability)) {
+            return new WP_Error(
+                'wpm_forbidden',
+                'The WordPress user this site is connected with does not have the "' . $capability . '" capability needed for this request.',
+                // The capability as data, so WPWriter can name it without relaying the site's message.
+                array('status' => 403, 'capability' => $capability)
+            );
+        }
+        return true;
+    };
+}
+
 function wpm_connector_authenticate_request(WP_REST_Request $request) {
     $token = $request->get_header('x-wp-manager-token');
 
@@ -723,6 +769,43 @@ function wpm_connector_convert_post_type(WP_REST_Request $request) {
     ));
 }
 
+/**
+ * #1040 (dev-wpwriter, source-only mitigation; not released). Connector requests carry no cookie and no Authorization
+ * header, so a page cache in front of WordPress may treat them as anonymous and cacheable, whatever WordPress itself
+ * decides later. Every response on this plugin's own routes is now marked private and uncacheable, errors included, and
+ * LiteSpeed Cache is told not to store it. Mitigation only: it does not remove entries a cache already stored.
+ */
+function wpm_connector_is_own_route($route) {
+    // WordPress matches REST routes case-insensitively, so the namespace check must too (review NO-GO 6216538012).
+    // Bounded: the namespace itself, or the namespace followed by '/', never a longer namespace such as /wp-manager/v10.
+    $route = strtolower((string) $route);
+    foreach (array('/wp-manager/v1', '/wp-writer/v1') as $namespace) {
+        if ($route === $namespace || strpos($route, $namespace . '/') === 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function wpm_connector_nocache_responses($response, $server, $request) {
+    if (!($request instanceof WP_REST_Request) || !wpm_connector_is_own_route($request->get_route())) {
+        return $response;
+    }
+    if ($response instanceof WP_HTTP_Response) {
+        foreach (wp_get_nocache_headers() as $name => $value) {
+            if ($value !== false && $value !== '') {
+                $response->header($name, $value);
+            }
+        }
+        $response->header('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0, private');
+        $response->header('X-LiteSpeed-Cache-Control', 'no-cache');
+    }
+    // LiteSpeed Cache's own switch for "do not store this response" (no-op when LiteSpeed Cache is not active).
+    do_action('litespeed_control_set_nocache', 'WPWriter connector route');
+    return $response;
+}
+add_filter('rest_post_dispatch', 'wpm_connector_nocache_responses', 10, 3);
+
 add_action('rest_api_init', function () {
     register_rest_route('wp-manager/v1', '/pair', array(
         'methods' => 'POST',
@@ -741,13 +824,13 @@ add_action('rest_api_init', function () {
         'callback' => 'wpm_connector_rest_status',
         // Auth happens inside the callback via the connector token header,
         // same pattern as the proxy routes.
-        'permission_callback' => '__return_true',
+        'permission_callback' => wpm_connector_permission('read'),
     ));
 
     register_rest_route('wp-manager/v1', '/proxy/wp/v2/(?P<path>.*)', array(
         'methods' => WP_REST_Server::ALLMETHODS,
         'callback' => 'wpm_connector_rest_proxy',
-        'permission_callback' => '__return_true',
+        'permission_callback' => wpm_connector_permission('read'),
         'args' => array(
             'path' => array(
                 'required' => true,
@@ -759,7 +842,7 @@ add_action('rest_api_init', function () {
     register_rest_route('wp-manager/v1', '/proxy/wc/v3/(?P<path>.*)', array(
         'methods' => WP_REST_Server::ALLMETHODS,
         'callback' => 'wpm_connector_rest_wc_proxy',
-        'permission_callback' => '__return_true',
+        'permission_callback' => wpm_connector_permission('read'),
         'args' => array(
             'path' => array(
                 'required' => true,
@@ -773,14 +856,14 @@ add_action('rest_api_init', function () {
     register_rest_route('wp-writer/v1', '/seo-meta-status', array(
         'methods' => 'GET',
         'callback' => 'wpm_connector_seo_meta_status',
-        'permission_callback' => '__return_true',
+        'permission_callback' => wpm_connector_permission('edit_posts'),
     ));
 
     // Convert post type endpoint - convert post to page or vice versa
     register_rest_route('wp-writer/v1', '/convert-post-type/(?P<post_id>\d+)', array(
         'methods' => 'POST',
         'callback' => 'wpm_connector_convert_post_type',
-        'permission_callback' => '__return_true',
+        'permission_callback' => wpm_connector_permission('edit_posts'),
         'args' => array(
             'post_id' => array(
                 'required' => true,
@@ -794,14 +877,14 @@ add_action('rest_api_init', function () {
     register_rest_route('wp-writer/v1', '/theme-status', array(
         'methods' => 'GET',
         'callback' => 'wpm_connector_theme_status',
-        'permission_callback' => '__return_true',
+        'permission_callback' => wpm_connector_permission('edit_posts'),
     ));
 
     // Install whitelisted plugin from WordPress.org
     register_rest_route('wp-writer/v1', '/install-plugin', array(
         'methods' => 'POST',
         'callback' => 'wpm_connector_install_plugin',
-        'permission_callback' => '__return_true',
+        'permission_callback' => wpm_connector_permission('install_plugins'),
         'args' => array(
             'slug' => array(
                 'required' => true,
@@ -815,7 +898,7 @@ add_action('rest_api_init', function () {
     register_rest_route('wp-writer/v1', '/install-theme', array(
         'methods' => 'POST',
         'callback' => 'wpm_connector_install_theme',
-        'permission_callback' => '__return_true',
+        'permission_callback' => wpm_connector_permission('install_themes'),
         'args' => array(
             'slug' => array(
                 'required' => true,
@@ -830,12 +913,12 @@ add_action('rest_api_init', function () {
         array(
             'methods' => 'GET',
             'callback' => 'wpm_connector_list_menu_locations',
-            'permission_callback' => '__return_true',
+            'permission_callback' => wpm_connector_permission('edit_theme_options'),
         ),
         array(
             'methods' => 'POST',
             'callback' => 'wpm_connector_assign_menu_location',
-            'permission_callback' => '__return_true',
+            'permission_callback' => wpm_connector_permission('edit_theme_options'),
         ),
     ));
 
@@ -843,12 +926,12 @@ add_action('rest_api_init', function () {
         array(
             'methods' => 'GET',
             'callback' => 'wpm_connector_get_custom_css',
-            'permission_callback' => '__return_true',
+            'permission_callback' => wpm_connector_permission('edit_theme_options'),
         ),
         array(
             'methods' => 'POST',
             'callback' => 'wpm_connector_update_custom_css',
-            'permission_callback' => '__return_true',
+            'permission_callback' => wpm_connector_permission('edit_theme_options'),
             'args' => array(
                 'css' => array(
                     'required' => true,
@@ -869,12 +952,12 @@ add_action('rest_api_init', function () {
         array(
             'methods' => 'GET',
             'callback' => 'wpm_connector_get_permalink_structure',
-            'permission_callback' => '__return_true',
+            'permission_callback' => wpm_connector_permission('manage_options'),
         ),
         array(
             'methods' => 'POST',
             'callback' => 'wpm_connector_set_permalink_structure',
-            'permission_callback' => '__return_true',
+            'permission_callback' => wpm_connector_permission('manage_options'),
         ),
     ));
 
@@ -882,52 +965,52 @@ add_action('rest_api_init', function () {
     register_rest_route('wp-writer/v1', '/plugins', array(
         'methods' => 'GET',
         'callback' => 'wpm_connector_list_plugins',
-        'permission_callback' => '__return_true',
+        'permission_callback' => wpm_connector_permission('activate_plugins'),
     ));
 
     register_rest_route('wp-writer/v1', '/plugin-status', array(
         'methods' => 'POST',
         'callback' => 'wpm_connector_toggle_plugin',
-        'permission_callback' => '__return_true',
+        'permission_callback' => wpm_connector_permission('activate_plugins'),
     ));
 
     // Widget / sidebar management
     register_rest_route('wp-writer/v1', '/sidebars', array(
         'methods' => 'GET',
         'callback' => 'wpm_connector_list_sidebars',
-        'permission_callback' => '__return_true',
+        'permission_callback' => wpm_connector_permission('edit_theme_options'),
     ));
 
     register_rest_route('wp-writer/v1', '/widgets', array(
         array(
             'methods' => 'GET',
             'callback' => 'wpm_connector_list_widgets',
-            'permission_callback' => '__return_true',
+            'permission_callback' => wpm_connector_permission('edit_theme_options'),
         ),
         array(
             'methods' => 'POST',
             'callback' => 'wpm_connector_add_widget',
-            'permission_callback' => '__return_true',
+            'permission_callback' => wpm_connector_permission('edit_theme_options'),
         ),
     ));
 
     register_rest_route('wp-writer/v1', '/widgets/(?P<widget_id>[a-zA-Z0-9_-]+)', array(
         'methods' => 'DELETE',
         'callback' => 'wpm_connector_remove_widget',
-        'permission_callback' => '__return_true',
+        'permission_callback' => wpm_connector_permission('edit_theme_options'),
     ));
 
     // WP 7.0 Connectors — discover/import AI provider keys saved in Settings → Connectors
     register_rest_route('wp-writer/v1', '/connector-keys', array(
         'methods' => 'GET',
         'callback' => 'wpm_connector_connector_keys',
-        'permission_callback' => '__return_true',
+        'permission_callback' => wpm_connector_permission('manage_options'),
     ));
 
     register_rest_route('wp-writer/v1', '/connector-keys/reveal', array(
         'methods' => 'POST',
         'callback' => 'wpm_connector_connector_keys_reveal',
-        'permission_callback' => '__return_true',
+        'permission_callback' => wpm_connector_permission('manage_options'),
         'args' => array(
             'provider' => array(
                 'required' => true,

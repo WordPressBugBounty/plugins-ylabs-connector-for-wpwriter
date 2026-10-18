@@ -2,9 +2,9 @@
 Contributors: ylabs
 Tags: mcp, chatgpt, claude, ai assistant, connector
 Requires at least: 5.6
-Tested up to: 7.0
+Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.12.5
+Stable tag: 1.13.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -192,6 +192,11 @@ All connection data and settings are removed from your WordPress database.
 
 == Changelog ==
 
+= 1.13.1 =
+* Security hardening: every request from WPWriter to the plugin needs the site's connection token, and the connected WordPress user must have the matching capability.
+* Removes the background polling added in 1.13.0. Requests from WPWriter reach the site directly, as in 1.12.x.
+* Marks responses from the plugin's own routes private and uncacheable and asks LiteSpeed Cache not to store them. This does not remove previously cached responses or prevent a cache from serving them before WordPress runs.
+
 = 1.12.5 =
 * Listing update: new title, short description, and animated directory icon (GIF in the plugin directory assets). No code change.
 
@@ -308,6 +313,9 @@ All connection data and settings are removed from your WordPress database.
 * REST API proxy for WordPress core endpoints
 
 == Upgrade Notice ==
+
+= 1.13.1 =
+Security hardening. Please update.
 
 = 1.10.0 =
 WordPress 7.0 ready. If you saved your AI provider keys in Settings → Connectors, you can now import them into WPWriter instead of entering them twice.
