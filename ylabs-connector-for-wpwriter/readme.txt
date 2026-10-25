@@ -1,10 +1,10 @@
-=== WPWriter - Manage WordPress from ChatGPT or Claude ===
+=== YLabs AI Site Manager with ChatGPT and Claude ===
 Contributors: ylabs
 Tags: mcp, chatgpt, claude, ai assistant, connector
 Requires at least: 5.6
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.13.1
+Stable tag: 1.15.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -15,19 +15,21 @@ Connect WordPress to WPWriter. Manage posts, SEO and media from ChatGPT or Claud
 
 Manage your self-hosted WordPress site from ChatGPT or Claude with WPWriter. Ask WPWriter to draft, edit or schedule posts, update SEO fields and add media to your site.
 
+YLabs AI Site Manager is the WordPress connector for WPWriter, a service made by YLabs. The plugin pairs your site with your WPWriter account so that WPWriter can carry out the content requests you make.
+
 *WPWriter is made by YLabs and is not affiliated with OpenAI, Anthropic or the WordPress Foundation. ChatGPT, Claude and WordPress are trademarks of their owners.*
 
-Most AI writing plugins charge you per word or lock you into expensive subscriptions that include hidden AI costs. WPWriter uses a **BYOK (Bring Your Own Key)** model: connect your OpenAI, Anthropic (Claude), or Google (Gemini) API key and pay the AI providers directly at their standard rates. You keep full control over your AI costs.
+WPWriter uses a **BYOK (Bring Your Own Key)** model: connect your OpenAI, Anthropic (Claude), or Google (Gemini) API key and pay the AI providers directly at their standard rates. You keep full control over your AI costs.
 
 With **auto-blogging**, build a topic queue, choose your templates and AI models, schedule content runs, and control whether completed posts stay as drafts or publish only after configured quality checks pass.
 
-**Get started free** — 15 AI-generated posts and 20 AI-generated images to try the product. No credit card required.
+A free WPWriter account includes 15 AI-generated posts and 20 AI-generated images. No credit card required.
 
 = What Can You Do With WPWriter? =
 
 * **AI Content Creation** — Generate complete, publish-ready articles and pages with a guided wizard: content settings, design settings, media selection, and generation
 * **Auto-Blogging** — Schedule content from a topic queue with draft-first review or quality-gated auto-publishing controls
-* **AI Image Generation** — Create stunning images with DALL-E, Imagen, Nanobanana (Gemini-powered realistic images), Stability AI, and more — with built-in optimization and batch upload
+* **AI Image Generation** — Create images with DALL-E, Imagen, Nanobanana (Gemini), Stability AI and other models, with optimization and batch upload
 * **AI SEO Optimization** — Automatically generate SEO titles, descriptions, and supported focus keywords with AI, supporting Yoast SEO, Rank Math, and All in One SEO
 * **AI Content Improvement** — Improve, expand, and rewrite existing posts with AI assistance
 * **AI Image Enhancement** — Upscale, enhance, or reimagine existing images
@@ -39,7 +41,6 @@ With **auto-blogging**, build a topic queue, choose your templates and AI models
 * **Multi-Site Management** — Manage multiple WordPress sites from one WPWriter dashboard
 * **Post Type Conversion** — Convert posts to pages or pages to posts with a single click
 * **Category & Tag Management** — Create and organize taxonomies directly from WPWriter
-* **WordPress 7.0 Connector Key Import** — Explicitly import an AI key already saved in Settings → Connectors instead of entering it twice
 
 = Content for Any Scenario =
 
@@ -53,9 +54,9 @@ WPWriter uses customizable prompt templates to create content for virtually any 
 
 Every template is open-source and free to use. Modify them or build your own from scratch.
 
-= 50+ AI Models Supported =
+= Supported AI Models =
 
-Choose the right model for each task — from fast and affordable to maximum quality:
+Choose a model for each task:
 
 **Text & Content:**
 * **Claude** (Anthropic) — Opus 4.6, Sonnet 4.5, Haiku 4.5, and more
@@ -63,22 +64,35 @@ Choose the right model for each task — from fast and affordable to maximum qua
 * **GPT** (OpenAI) — GPT-4o, GPT-4.1, o3, o4-mini, and more
 
 **Image Generation:**
-* **Nanobanana** (Gemini) — Superior realistic images, our top recommendation
-* **Imagen 4 Ultra / Imagen 4** (Google) — High-quality generation
-* **DALL-E 3 / DALL-E 2** (OpenAI) — Versatile AI image creation
+* **Nanobanana** (Gemini) — Realistic images
+* **Imagen 4 Ultra / Imagen 4** (Google)
+* **DALL-E 3 / DALL-E 2** (OpenAI)
 
-= Why Pure HTML Instead of a Page Builder? =
+= Plain HTML Output =
 
-WPWriter generates clean, semantic HTML — no Elementor, WPBakery, or Divi dependency. This means:
+WPWriter writes plain, semantic HTML that your theme styles. It does not need a page builder.
 
-* **Faster page loads** — No extra CSS/JS frameworks, just clean HTML styled by your theme
-* **Better SEO** — Search engines easily parse lightweight HTML without page builder bloat
-* **No plugin lock-in** — Your content works with any theme and survives plugin changes
-* **Lower hosting costs** — Less server resources needed to render pages
+= What WPWriter Can and Cannot Do on Your Site =
 
-= WordPress 7.0 Connector Key Import =
+WPWriter acts as the WordPress user you pair with, but always with the limits below, even if that user is an Administrator.
 
-On WordPress 7.0 and later, you can explicitly import a database-stored OpenAI, Anthropic, or Google API key that you already saved in **Settings → Connectors**. WPWriter validates the selected key before saving it. Keys configured on the server through environment variables or PHP constants are not imported.
+WPWriter can:
+
+* create, edit, schedule, publish and delete posts and pages
+* upload and edit media, and manage categories, tags and comments
+* save full HTML in posts and pages (styles, embeds and structured data), as a WordPress Editor can
+* edit menus, menu locations and widgets
+* read the active theme and which SEO plugin is installed, and save SEO fields on posts
+* edit WooCommerce products, if WooCommerce is installed
+* read the site display settings, and change them only when you pair as an Administrator (site title, tagline, homepage settings, posts per page, date and time format, timezone, week start, site icon, site logo, default comment and ping status)
+
+WPWriter cannot:
+
+* install, activate, update, edit or delete plugins or themes, or update WordPress
+* create, edit, delete or list users, or change anyone's role
+* change any other setting, such as the admin email, membership, permalinks or search engine visibility
+* read passwords, API keys or other stored secrets from your site
+* edit theme or plugin files, upload unfiltered file types, or import or export site data
 
 = Security =
 
@@ -87,6 +101,9 @@ On WordPress 7.0 and later, you can explicitly import a database-stored OpenAI, 
 * Each connection can be individually revoked
 * All API requests are authenticated and validated
 * Supports multiple simultaneous WPWriter account connections
+* Every WPWriter request is limited to content work, even for an Administrator: the plugin removes plugin, theme, update, user, file, import/export, unfiltered upload and general-settings capabilities for the duration of each request
+* No stored secret ever leaves the site: there is no endpoint that reads API keys or passwords
+* The plugin respects a host or security plugin that turns off WordPress Application Passwords
 
 = External Service Disclosure =
 
@@ -94,8 +111,7 @@ This plugin connects to WPWriter (wpwriter.com) to enable content management fea
 
 * Your site URL and connector authentication details are associated with your WPWriter account so authenticated site-management requests can be made
 * Content you create, sync, publish, or schedule through auto-blogging is transmitted between WPWriter and your WordPress site as required to perform those actions
-* On WordPress 7.0+, if you explicitly choose **Import from WordPress**, the selected database-stored AI provider key from **Settings → Connectors** is transmitted to WPWriter and stored encrypted in your WPWriter account for AI requests
-* Keys supplied to WordPress through environment variables or PHP constants are not imported by this feature
+* The plugin never sends passwords, API keys or other stored secrets from your site to WPWriter
 
 [WPWriter Terms of Service](https://www.wpwriter.com/terms)
 [WPWriter Privacy Policy](https://www.wpwriter.com/privacy)
@@ -111,13 +127,11 @@ This plugin connects to WPWriter (wpwriter.com) to enable content management fea
 5. Click **Generate Pairing Code** and enter a name for this connection (e.g., "My Laptop").
 6. Copy the pairing code and paste it into your WPWriter dashboard to connect.
 
-That's it — start creating AI content immediately.
-
 == Frequently Asked Questions ==
 
 = Is WPWriter free? =
 
-Yes! The free plan includes 15 AI-generated posts and 20 AI-generated images for one WordPress site. No credit card required. Paid plans unlock more sites, higher word counts, and additional features.
+Yes. The free plan includes 15 AI-generated posts and 20 AI-generated images for one WordPress site. No credit card required. Paid plans unlock more sites, higher word counts, and additional features.
 
 = Do I need my own AI API key? =
 
@@ -129,11 +143,11 @@ Yes. Auto-blogging lets you build a topic queue and schedule AI-generated posts.
 
 = Can I import an AI key saved in WordPress Settings → Connectors? =
 
-On WordPress 7.0 and later, yes. If you explicitly choose **Import from WordPress** in WPWriter, the selected database-stored connector key is sent to WPWriter, validated, and stored encrypted in your account. Server-configured keys are not imported.
+No. Since version 1.15.0 the plugin never sends a stored key or other secret to WPWriter. Enter your AI key in WPWriter directly.
 
-= How is this different from other AI writing plugins? =
+= Can WPWriter install plugins or themes, or change my permalinks? =
 
-Four key differences: (1) **No token markup** — you use your own API keys and pay providers directly, (2) **Auto-blogging controls** — schedule topic-driven content with draft or quality-gated publishing, (3) **50+ AI models** across 3 providers — pick the right model for each task, (4) **Design control** — a dedicated design step lets you control the visual layout of your content, not just the text.
+No. The plugin has no endpoints for plugins, themes or permalinks, and since version 1.15.0 every WPWriter request runs without those capabilities even when you pair as an Administrator. Make those changes in your WordPress admin. Of the general settings, WPWriter can change only 14 display settings, such as the site title, tagline and homepage, and only when you pair as an Administrator.
 
 = Is my WordPress password shared with WPWriter? =
 
@@ -141,7 +155,7 @@ No. This plugin uses secure token-based authentication. Your WordPress password 
 
 = Will this slow down my WordPress site? =
 
-The opposite — all AI processing happens on WPWriter's servers, completely outside your WordPress environment. The result is optimized images, clean semantic HTML, and AI-generated SEO metadata delivered as lightweight content that loads fast.
+AI processing runs on WPWriter's servers, not on your WordPress server.
 
 = Which SEO plugins are supported? =
 
@@ -150,15 +164,9 @@ WPWriter can automatically generate and set SEO titles, descriptions, and suppor
 * Rank Math
 * All in One SEO
 
-= Is there a recommended theme? =
-
-WPWriter works with any WordPress theme. For best results, try the **WPWriter Theme** — a free Astra child theme designed to render AI-generated content beautifully. It includes optimized CSS for article layouts, image galleries, shortcode containers, and responsive design.
-
-Download it here: [WPWriter Theme Setup](https://www.wpwriter.com/docs/theme-setup). Requires the free [Astra theme](https://wordpress.org/themes/astra/) as a parent.
-
 = Are there any recommended companion plugins? =
 
-For the best experience:
+These plugins work well with WPWriter content. Install them yourself from the plugin directory if you want them:
 
 * **[Classic Editor](https://wordpress.org/plugins/classic-editor/)** — WPWriter generates HTML optimized for the classic editor
 * **A Lightbox plugin** (e.g., [Simple Lightbox](https://wordpress.org/plugins/simple-lightbox/) or [Easy FancyBox](https://wordpress.org/plugins/easy-fancybox/)) — For full-screen image viewing in galleries
@@ -192,6 +200,19 @@ All connection data and settings are removed from your WordPress database.
 
 == Changelog ==
 
+= 1.15.0 =
+* Every WPWriter request now runs with content-level capabilities only, even when the site is paired as an Administrator: no plugin, theme, WordPress update, user, file editing, import/export, unfiltered upload or general-settings capabilities. Saving full HTML in posts and pages stays possible, as for a WordPress Editor.
+* Removed the endpoints that listed installed plugins and that read AI provider keys saved in Settings → Connectors. No stored secret ever leaves the site.
+* Site settings requests are no longer passed to WordPress. The plugin answers them itself with the 14 display settings only (title, tagline, homepage settings, posts per page, date and time format, timezone, week start, site icon, site logo, default comment and ping status): it checks every value, refuses any other setting, and changes settings only when the site is paired as an Administrator. The admin email and every other setting are never read or changed.
+* The pairing screen and this readme list exactly what WPWriter can and cannot do.
+
+= 1.14.0 =
+* Renamed to "YLabs AI Site Manager with ChatGPT and Claude" in the readme and the plugin header. The plugin folder and slug are unchanged.
+* Removed the endpoints that installed, activated or deactivated plugins, installed or switched themes (including the WPWriter theme download), changed the permalink structure, changed search engine visibility, or changed the site's custom CSS. Make those changes in your WordPress admin.
+* The REST proxy now forwards only content requests (posts, pages, media, categories, tags, comments and menus), read-only lookups (post types, taxonomies, post statuses, search, users and settings), changes to 14 display settings (such as the site title, tagline and homepage) and WooCommerce product requests. It refuses everything else, including plugins, themes, user changes, application passwords and other settings.
+* The plugin no longer turns WordPress Application Passwords back on when a host or security plugin has turned them off. If they are off, WPWriter's one-step connection shows a message, and the pairing code still works.
+* Readme: removed comparisons with other plugins and the theme recommendation.
+
 = 1.13.1 =
 * Security hardening: every request from WPWriter to the plugin needs the site's connection token, and the connected WordPress user must have the matching capability.
 * Removes the background polling added in 1.13.0. Requests from WPWriter reach the site directly, as in 1.12.x.
@@ -224,125 +245,19 @@ All connection data and settings are removed from your WordPress database.
 * Updated directory description to document auto-blogging controls and connector key import consent
 * Tested up to WordPress 7.0
 
-= 1.9.2 =
-* Removed plugin and theme whitelists — any WordPress.org plugin or theme can now be installed via MCP
-* Added custom CSS endpoints (get/update Additional CSS)
-* Added permalink structure endpoints (get/set)
-* Added plugin management endpoints (list, activate, deactivate, install)
-* Added sidebar and widget endpoints (list sidebars, list/add/remove widgets)
-* Added page hierarchy endpoint (set page parent)
-* Added search engine visibility endpoint
-* Free tier updated to 15 posts and 20 images
-
-= 1.8.5 =
-* Added menu locations endpoint for complete navigation management
-* Minor stability improvements
-
-= 1.8.4 =
-* Fixed theme installer fatal error — load full admin bootstrap (admin.php) for Plugin/Theme_Upgrader compatibility
-
-= 1.8.3 =
-* Fixed fatal error in plugin/theme installer when called via REST API (missing admin includes)
-
-= 1.8.2 =
-* Added whitelisted plugin installer endpoint (Yoast SEO, Classic Editor, Simple Lightbox, Wordfence, WP Mail SMTP)
-* Added whitelisted theme installer endpoint (Astra parent theme, WPWriter child theme)
-* Added theme status detection endpoint for design recommendations
-* All installer endpoints require proper WordPress capabilities and token authentication
-
-= 1.8.1 =
-* WP360 shortcode now supports fade parameter for smooth frame transitions
-* Minor code cleanup and stability improvements
-
-= 1.8.0 =
-* Added WP360 product spin viewer shortcode for 360-degree product spins
-* Supports both attachment IDs and direct URLs for spin images
-* Configurable speed, autoplay, reverse rotation, and fade options
-
-= 1.7.9 =
-* Added REST support for Yoast and Rank Math focus keyword fields
-* Connector SEO meta registration now exposes focus keywords alongside titles and descriptions
-
-= 1.7.8 =
-* Cancel button now removes stale connections from the pairing attempt
-* Added REST API fallback for servers returning HTML instead of JSON (soft 404)
-* Improved error messages with actionable guidance and quick-link buttons
-* Plugin version displayed in all download and connection instructions
-
-= 1.7.7 =
-* Changed App URL to read-only display (no longer editable)
-* Added Cancel button next to pairing code Copy button
-* Removed unnecessary Save Settings form
-
-= 1.7.6 =
-* Added ?rest_route= fallback for hosting setups where /wp-json/ rewrite rules are broken (common on LiteSpeed)
-* Added www/non-www URL fallback for pairing errors
-* Friendly error messages instead of raw HTML error pages
-* Added connector proxy support for both REST API endpoint styles
-
-= 1.7.5 =
-* Renamed plugin for WordPress.org directory compliance
-* Updated text domain to ylabs-connector-for-wpwriter
-
-= 1.7.2 =
-* Improved documentation and code comments
-* Prepared for WordPress.org submission
-
-= 1.7.1 =
-* Added support for multiple simultaneous connections
-* Added connection labels for easier identification
-* Improved admin UI with connection management table
-
-= 1.7.0 =
-* Added SEO plugin detection (Yoast, Rank Math, All in One SEO)
-* Added automatic SEO meta field support via REST API
-* Improved REST API proxy for embedded resources
-
-= 1.6.0 =
-* Added pairing code authentication flow
-* Removed direct token display for improved security
-* Added configurable hub URL setting
-
-= 1.5.0 =
-* Added media upload support via REST proxy
-* Improved Content-Disposition header handling
-
-= 1.4.0 =
-* Initial public release
-* Token-based authentication
-* REST API proxy for WordPress core endpoints
+= 1.4.0 to 1.9.2 =
+* Earlier releases added pairing-code authentication, multiple connections, SEO meta fields, media upload, menus, widgets and the WP360 shortcode. The plugin, theme and permalink endpoints they also added were removed in 1.14.0.
 
 == Upgrade Notice ==
+
+= 1.15.0 =
+WPWriter now works with content-level permissions only, cannot read stored API keys, and can no longer list your plugins. Changing site display settings needs pairing as an Administrator.
+
+= 1.14.0 =
+WPWriter can no longer install or change plugins, themes, permalinks, search engine visibility or custom CSS on your site. Make those changes in your WordPress admin.
 
 = 1.13.1 =
 Security hardening. Please update.
 
 = 1.10.0 =
 WordPress 7.0 ready. If you saved your AI provider keys in Settings → Connectors, you can now import them into WPWriter instead of entering them twice.
-
-= 1.9.2 =
-Major update: AI assistants can now install any WordPress.org plugin or theme, manage custom CSS, permalinks, widgets, sidebars, and page hierarchy. No more whitelists.
-
-= 1.8.4 =
-Fixed theme installer — full admin bootstrap required for Theme_Upgrader.
-
-= 1.8.3 =
-Fixed fatal error when installing plugins/themes via REST API.
-
-= 1.8.2 =
-New: AI assistants can now install recommended plugins and themes directly. Whitelisted installers for Yoast SEO, Classic Editor, Wordfence, WP Mail SMTP, Astra theme, and WPWriter theme.
-
-= 1.8.1 =
-New WP360 product spin viewer shortcode for 360-degree product photography. Focus keyword support for Yoast and Rank Math SEO plugins.
-
-= 1.7.8 =
-Improved reliability on LiteSpeed and other hosting setups. Better error messages and pairing flow fixes.
-
-= 1.7.5 =
-Plugin renamed for WordPress.org directory compliance. No functional changes.
-
-= 1.7.2 =
-Documentation and compatibility improvements. Recommended update for all users.
-
-= 1.7.1 =
-Now supports multiple WPWriter account connections. Existing single connections are automatically migrated.
