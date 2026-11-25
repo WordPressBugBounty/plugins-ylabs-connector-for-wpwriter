@@ -4,7 +4,7 @@ Tags: mcp, chatgpt, claude, ai assistant, connector
 Requires at least: 5.6
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.15.0
+Stable tag: 1.16.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -24,6 +24,16 @@ WPWriter uses a **BYOK (Bring Your Own Key)** model: connect your OpenAI, Anthro
 With **auto-blogging**, build a topic queue, choose your templates and AI models, schedule content runs, and control whether completed posts stay as drafts or publish only after configured quality checks pass.
 
 A free WPWriter account includes 15 AI-generated posts and 20 AI-generated images. No credit card required.
+
+= Connect in ChatGPT or Claude =
+
+After you install the plugin, its Connect page shows these steps.
+
+In ChatGPT: open Plugins in the sidebar, find WPWriter and click Install plugin. If ChatGPT offers Chat and Work, use Chat.
+
+In Claude: open Customize → Connectors, choose + Add, then Add custom connector. Enter the name WPWriter and the URL https://mcp.wpwriter.com/mcp, go through Claude's steps and click Add, then sign in with your WPWriter account. Claude's Free plan allows one custom connector.
+
+Then say "Connect my WordPress site" and approve the request in your WordPress admin.
 
 = What Can You Do With WPWriter? =
 
@@ -197,58 +207,19 @@ All connection data and settings are removed from your WordPress database.
 5. AI Editor: Media & Images — select and manage images for your content
 6. AI Editor: Generate — choose your AI model and generate complete content
 7. Analytics dashboard — track AI usage, costs, and content performance
+8. The Connect page: how to connect your site in ChatGPT and Claude.
 
 == Changelog ==
 
-= 1.15.0 =
-* Every WPWriter request now runs with content-level capabilities only, even when the site is paired as an Administrator: no plugin, theme, WordPress update, user, file editing, import/export, unfiltered upload or general-settings capabilities. Saving full HTML in posts and pages stays possible, as for a WordPress Editor.
-* Removed the endpoints that listed installed plugins and that read AI provider keys saved in Settings → Connectors. No stored secret ever leaves the site.
-* Site settings requests are no longer passed to WordPress. The plugin answers them itself with the 14 display settings only (title, tagline, homepage settings, posts per page, date and time format, timezone, week start, site icon, site logo, default comment and ping status): it checks every value, refuses any other setting, and changes settings only when the site is paired as an Administrator. The admin email and every other setting are never read or changed.
-* The pairing screen and this readme list exactly what WPWriter can and cannot do.
+= 1.16.0 =
+* Added a Connect page that shows how to connect your site in ChatGPT and Claude, with an optional check that this site's REST API answers.
 
-= 1.14.0 =
-* Renamed to "YLabs AI Site Manager with ChatGPT and Claude" in the readme and the plugin header. The plugin folder and slug are unchanged.
-* Removed the endpoints that installed, activated or deactivated plugins, installed or switched themes (including the WPWriter theme download), changed the permalink structure, changed search engine visibility, or changed the site's custom CSS. Make those changes in your WordPress admin.
-* The REST proxy now forwards only content requests (posts, pages, media, categories, tags, comments and menus), read-only lookups (post types, taxonomies, post statuses, search, users and settings), changes to 14 display settings (such as the site title, tagline and homepage) and WooCommerce product requests. It refuses everything else, including plugins, themes, user changes, application passwords and other settings.
-* The plugin no longer turns WordPress Application Passwords back on when a host or security plugin has turned them off. If they are off, WPWriter's one-step connection shows a message, and the pairing code still works.
-* Readme: removed comparisons with other plugins and the theme recommendation.
-
-= 1.13.1 =
-* Security hardening: every request from WPWriter to the plugin needs the site's connection token, and the connected WordPress user must have the matching capability.
-* Removes the background polling added in 1.13.0. Requests from WPWriter reach the site directly, as in 1.12.x.
-* Marks responses from the plugin's own routes private and uncacheable and asks LiteSpeed Cache not to store them. This does not remove previously cached responses or prevent a cache from serving them before WordPress runs.
-
-= 1.12.5 =
-* Listing update: new title, short description, and animated directory icon (GIF in the plugin directory assets). No code change.
-
-= 1.12.4 =
-* Readme and listing text only; no code change.
-
-= 1.12.3 =
-* Fixed: on sites with an object cache, every pairing code was rejected as "expired or not found", even seconds after it was generated. The code was held in a transient, which such a cache can drop between the admin screen that shows the code and the request that checks it. The code is now stored in the database and read without the cache. Codes created by earlier versions still work.
-
-= 1.12.2 =
-* The plugin now re-enables WordPress Application Passwords if a security plugin or host turned them off — only where WordPress core itself supports them (HTTPS or local environments). This unblocks WPWriter's one-step connection; the pairing-code path is unchanged. Every Application Password stays individually revocable under Users → Profile.
-
-= 1.12.1 =
-* Fixed: "Add widget" failed with a critical error on every site. The next widget slot was calculated from all stored widget keys, including the non-numeric "_multiwidget" key WordPress keeps there, which is a fatal error on PHP 8. Widget keys are now filtered to numbers.
-
-= 1.12.0 =
-* Added: token-authenticated GET /wp-json/wp-manager/v1/status health-check endpoint. Fixes false "disconnected" status on sites whose security plugins block or redirect URLs containing wp/v2/users (user-enumeration protection).
-
-= 1.11.1 =
-* Fixed: download package used incorrect ZIP path separators, causing "the plugin file does not exist" on activation and an undeletable plugin on hosts without the PHP ZipArchive extension. No code changes — repackaging fix only.
-
-= 1.10.0 =
-* Added WordPress 7.0 Connectors support — import AI provider API keys you already saved in Settings → Connectors instead of entering them twice
-* Database-stored connector keys only (keys supplied via server configuration are not imported)
-* Updated directory description to document auto-blogging controls and connector key import consent
-* Tested up to WordPress 7.0
-
-= 1.4.0 to 1.9.2 =
-* Earlier releases added pairing-code authentication, multiple connections, SEO meta fields, media upload, menus, widgets and the WP360 shortcode. The plugin, theme and permalink endpoints they also added were removed in 1.14.0.
+Earlier versions are listed in changelog.txt.
 
 == Upgrade Notice ==
+
+= 1.16.0 =
+Adds a Connect page with the steps for ChatGPT and Claude.
 
 = 1.15.0 =
 WPWriter now works with content-level permissions only, cannot read stored API keys, and can no longer list your plugins. Changing site display settings needs pairing as an Administrator.
@@ -258,6 +229,3 @@ WPWriter can no longer install or change plugins, themes, permalinks, search eng
 
 = 1.13.1 =
 Security hardening. Please update.
-
-= 1.10.0 =
-WordPress 7.0 ready. If you saved your AI provider keys in Settings → Connectors, you can now import them into WPWriter instead of entering them twice.

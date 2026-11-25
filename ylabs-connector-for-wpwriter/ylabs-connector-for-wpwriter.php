@@ -2,7 +2,7 @@
 /**
  * Plugin Name: YLabs AI Site Manager with ChatGPT and Claude
  * Description: Connect WordPress to WPWriter so you can manage posts, SEO and media from ChatGPT or Claude.
- * Version: 1.15.0
+ * Version: 1.16.0
  * Author: YLabs
  * Author URI: https://www.wpwriter.com
  * License: GPLv2 or later
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WPM_CONNECTOR_VERSION', '1.15.0' );
+define( 'WPM_CONNECTOR_VERSION', '1.16.0' );
 
 // Storage keys.
 const WPM_CONNECTOR_OPTION_CONNECTIONS = 'wpm_connector_connections';
@@ -1634,6 +1634,179 @@ add_filter(
 		return $links;
 	}
 );
+
+// ─── Connect guide (1.16.0) ────────────────────────────────────────────────────
+//
+// One administrator-only screen with the steps for connecting this site in ChatGPT and in Claude.
+// It stores nothing, registers no REST route and calls no outside service. Its only request is the
+// optional, nonce-protected readiness check: one GET to this site's own REST index.
+
+const WPM_CONNECTOR_GUIDE_SLUG        = 'wpm-connector-connect';
+const WPM_CONNECTOR_GUIDE_CHATGPT_URL = 'https://chatgpt.com/plugins/plugin_asdk_app_69d57a067de88191a2dee16c9d78e18c';
+const WPM_CONNECTOR_GUIDE_MCP_URL     = 'https://mcp.wpwriter.com/mcp';
+const WPM_CONNECTOR_GUIDE_CLAUDE_HELP = 'https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp';
+
+/**
+ * Register the Connect screen under the WPWriter menu.
+ */
+function wpm_connector_guide_register() {
+	add_submenu_page(
+		'wpm-connector',
+		__( 'Connect in ChatGPT or Claude', 'ylabs-connector-for-wpwriter' ),
+		__( 'Connect', 'ylabs-connector-for-wpwriter' ),
+		'manage_options',
+		WPM_CONNECTOR_GUIDE_SLUG,
+		'wpm_connector_guide_page'
+	);
+}
+add_action( 'admin_menu', 'wpm_connector_guide_register', 20 );
+
+/**
+ * Check this site's own REST index. The URL comes from rest_url() only, never from the request; no
+ * redirects are followed and no cookies or credentials are sent.
+ *
+ * @return bool Whether a bounded response is a WordPress REST index.
+ */
+function wpm_connector_guide_rest_ready() {
+	$response = wp_safe_remote_get(
+		rest_url(),
+		array(
+			'timeout'             => 3,
+			'redirection'         => 0,
+			'limit_response_size' => 2097152,
+			'sslverify'           => true,
+			'cookies'             => array(),
+			'headers'             => array( 'Accept' => 'application/json' ),
+			'user-agent'          => 'WPWriter-Local-Readiness/' . WPM_CONNECTOR_VERSION,
+		)
+	);
+	if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
+		return false;
+	}
+	$index = json_decode( wp_remote_retrieve_body( $response ), true, 64 );
+	return is_array( $index ) && isset( $index['namespaces'], $index['routes'] ) && is_array( $index['namespaces'] ) && is_array( $index['routes'] );
+}
+
+/**
+ * The ChatGPT steps (the published WPWriter plugin in ChatGPT).
+ */
+function wpm_connector_guide_chatgpt_section() {
+	echo '<div class="card">';
+	echo '<h2>' . esc_html__( 'Connect in ChatGPT', 'ylabs-connector-for-wpwriter' ) . '</h2>';
+	echo '<p><a class="button button-primary" href="' . esc_url( WPM_CONNECTOR_GUIDE_CHATGPT_URL ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Open WPWriter in ChatGPT (new tab)', 'ylabs-connector-for-wpwriter' ) . '</a></p>';
+	echo '<ol>';
+	echo '<li>' . esc_html__( 'In ChatGPT, open Plugins in the sidebar, find WPWriter and click Install plugin. The button above opens the WPWriter plugin page directly.', 'ylabs-connector-for-wpwriter' ) . '</li>';
+	echo '<li>' . esc_html__( 'When ChatGPT asks, sign in to WPWriter or create a free account.', 'ylabs-connector-for-wpwriter' ) . '</li>';
+	echo '<li>' . esc_html__( 'If ChatGPT offers Chat and Work, use Chat.', 'ylabs-connector-for-wpwriter' ) . '</li>';
+	echo '</ol>';
+	echo '</div>';
+}
+
+/**
+ * The Claude steps. WPWriter is added to Claude as a custom connector. This is the only function to
+ * change when WPWriter has a listing in Claude's connector directory: replace these steps with a link to it.
+ */
+function wpm_connector_guide_claude_section() {
+	$code = array( 'code' => array() );
+	echo '<div class="card">';
+	echo '<h2>' . esc_html__( 'Connect in Claude', 'ylabs-connector-for-wpwriter' ) . '</h2>';
+	echo '<p>' . esc_html__( 'Add WPWriter to Claude as a custom connector:', 'ylabs-connector-for-wpwriter' ) . '</p>';
+	echo '<ol>';
+	echo '<li>' . esc_html__( 'In Claude, open Customize → Connectors.', 'ylabs-connector-for-wpwriter' ) . '</li>';
+	echo '<li>' . esc_html__( 'Choose + Add, then Add custom connector.', 'ylabs-connector-for-wpwriter' ) . '</li>';
+	echo '<li>' . wp_kses(
+		sprintf(
+			/* translators: 1: connector name, 2: connector URL. */
+			esc_html__( 'Enter the name %1$s and the URL %2$s, go through Claude\'s steps and click Add.', 'ylabs-connector-for-wpwriter' ),
+			'<code>WPWriter</code>',
+			'<code>' . esc_html( WPM_CONNECTOR_GUIDE_MCP_URL ) . '</code>'
+		),
+		$code
+	) . '</li>';
+	echo '<li>' . esc_html__( 'Then sign in with your WPWriter account.', 'ylabs-connector-for-wpwriter' ) . '</li>';
+	echo '</ol>';
+	echo '<p>' . esc_html__( 'Claude\'s Free plan allows one custom connector. On Team and Enterprise plans, an owner adds it first under Organization settings → Connectors.', 'ylabs-connector-for-wpwriter' ) . '</p>';
+	echo '<p><a href="' . esc_url( WPM_CONNECTOR_GUIDE_CLAUDE_HELP ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Claude help: custom connectors (new tab)', 'ylabs-connector-for-wpwriter' ) . '</a></p>';
+	echo '</div>';
+}
+
+/**
+ * The Connect screen: local readiness checks, the ChatGPT and Claude steps, and the last step in the chat.
+ */
+function wpm_connector_guide_page() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( esc_html__( 'You do not have permission to view this page.', 'ylabs-connector-for-wpwriter' ) );
+	}
+	$checked = false;
+	$rest_ok = false;
+	if ( isset( $_POST['wpm_guide_check'] ) ) {
+		check_admin_referer( 'wpm_connector_guide_check' );
+		$checked = true;
+		$rest_ok = wpm_connector_guide_rest_ready();
+	}
+	$https      = 'https' === wp_parse_url( home_url( '/' ), PHP_URL_SCHEME );
+	$permalinks = '' !== (string) get_option( 'permalink_structure' );
+	$passwords  = function_exists( 'wp_is_application_passwords_available_for_user' ) && wp_is_application_passwords_available_for_user( wp_get_current_user() );
+	$checks     = array(
+		array( $https, __( 'HTTPS site address', 'ylabs-connector-for-wpwriter' ), $https ? __( 'The site address uses HTTPS.', 'ylabs-connector-for-wpwriter' ) : __( 'Ask your host to turn on HTTPS, then update the site address under Settings > General.', 'ylabs-connector-for-wpwriter' ) ),
+		array( $permalinks, __( 'Permalinks are not Plain', 'ylabs-connector-for-wpwriter' ), $permalinks ? __( 'A permalink structure other than Plain is set.', 'ylabs-connector-for-wpwriter' ) : __( 'Choose any structure other than Plain under Settings > Permalinks and save it.', 'ylabs-connector-for-wpwriter' ) ),
+		array( $passwords, __( 'Application Passwords available for you', 'ylabs-connector-for-wpwriter' ), $passwords ? __( 'WordPress reports that Application Passwords are available to your user.', 'ylabs-connector-for-wpwriter' ) : __( 'A security plugin or your host may have turned Application Passwords off. Turn them on in that plugin\'s settings, or ask your host. The pairing code on the WPWriter page still works.', 'ylabs-connector-for-wpwriter' ) ),
+		array( $checked ? $rest_ok : null, __( 'This site\'s REST API answers', 'ylabs-connector-for-wpwriter' ), ! $checked ? __( 'Check readiness sends one request to this site\'s own REST API.', 'ylabs-connector-for-wpwriter' ) : ( $rest_ok ? __( 'This site returned its REST API index.', 'ylabs-connector-for-wpwriter' ) : __( 'No valid answer. Check the permalinks, HTTPS, and your host\'s or security plugin\'s rules for the REST API.', 'ylabs-connector-for-wpwriter' ) ) ),
+	);
+
+	echo '<div class="wrap">';
+	echo '<h1>' . esc_html__( 'Connect in ChatGPT or Claude', 'ylabs-connector-for-wpwriter' ) . '</h1>';
+	echo '<p>' . esc_html__( 'Use WPWriter from ChatGPT or Claude: add WPWriter in your assistant, then ask it to connect this site. This page only shows the steps; it does not connect or change your site.', 'ylabs-connector-for-wpwriter' ) . '</p>';
+
+	echo '<div class="card">';
+	echo '<h2>' . esc_html__( 'Before you connect', 'ylabs-connector-for-wpwriter' ) . '</h2>';
+	echo '<ul>';
+	foreach ( $checks as $check ) {
+		// null = not checked yet: neutral, no mark (a cross and "Needs attention" only for a check that ran and failed).
+		if ( null === $check[0] ) {
+			$status = __( 'Not checked yet', 'ylabs-connector-for-wpwriter' );
+		} else {
+			$status = $check[0] ? __( 'Pass', 'ylabs-connector-for-wpwriter' ) : __( 'Needs attention', 'ylabs-connector-for-wpwriter' );
+		}
+		echo '<li><strong>';
+		if ( true === $check[0] ) {
+			echo '&#10003; ';
+		} elseif ( false === $check[0] ) {
+			echo '&#10007; ';
+		}
+		echo esc_html( $check[1] ) . ': ' . esc_html( $status ) . '</strong><br>' . esc_html( $check[2] ) . '</li>';
+	}
+	echo '</ul>';
+	echo '<form method="post">';
+	wp_nonce_field( 'wpm_connector_guide_check' );
+	submit_button( __( 'Check readiness', 'ylabs-connector-for-wpwriter' ), 'secondary', 'wpm_guide_check', false );
+	echo '</form>';
+	echo '<p>' . esc_html__( 'The checks read this site\'s settings. Check readiness also requests this site\'s own REST API index. Nothing is sent to WPWriter, ChatGPT or Claude.', 'ylabs-connector-for-wpwriter' ) . '</p>';
+	echo '</div>';
+
+	wpm_connector_guide_chatgpt_section();
+	wpm_connector_guide_claude_section();
+
+	echo '<div class="card">';
+	echo '<h2>' . esc_html__( 'Then connect this site', 'ylabs-connector-for-wpwriter' ) . '</h2>';
+	echo '<ol>';
+	echo '<li>' . esc_html__( 'In a chat with WPWriter, say: Connect my WordPress site.', 'ylabs-connector-for-wpwriter' ) . '</li>';
+	echo '<li>' . wp_kses(
+		sprintf(
+			/* translators: %s: this site's address. */
+			esc_html__( 'Give this site\'s address: %s', 'ylabs-connector-for-wpwriter' ),
+			'<code>' . esc_html( home_url( '/' ) ) . '</code>'
+		),
+		array( 'code' => array() )
+	) . '</li>';
+	echo '<li>' . esc_html__( 'Open the link from the chat, check the site address, and approve the request in your WordPress admin. Then return to your chat.', 'ylabs-connector-for-wpwriter' ) . '</li>';
+	echo '</ol>';
+	echo '</div>';
+
+	echo '<p>' . esc_html__( 'Never paste your WordPress password into a chat. ChatGPT and Claude are separate services with their own terms. The links on this page leave your site, and their providers receive your visit.', 'ylabs-connector-for-wpwriter' ) . '</p>';
+	echo '<p>' . esc_html__( 'WPWriter is made by YLabs and is not affiliated with OpenAI, Anthropic or the WordPress Foundation. ChatGPT, Claude and WordPress are trademarks of their owners.', 'ylabs-connector-for-wpwriter' ) . '</p>';
+	echo '</div>';
+}
 
 // ─── WP360 Product Spin Viewer Shortcode ───────────────────────────────────────
 //
